@@ -123,7 +123,7 @@ int visMode   = 0;
 int ledPreset = 0;
 bool transitionMode = false;
 #define NUM_VIS     11
-#define NUM_PRESETS 36
+#define NUM_PRESETS 37
 const char *visName[]  = {
     "SPECTRUM", "WATERFALL", "NOTE RAIN", "PULSE",
     "PLASMA", "TUNNEL", "DEEP SPACE", "ACID",
@@ -137,7 +137,8 @@ const char *ledName[]  = {
     "NOTE MAP", "NOTE SPLASH", "NOTE STACK", "NOTE PIANO",
     "COMET TRAIL", "RAIN DROP", "STARFIELD", "WAVE",
     "FIREWORKS", "BOUNCE", "SNAKE", "WATERFALL2D", "RADAR", "TETRIS",
-    "CYBERPUNK", "CHLADNI CYB", "CHLADNI MRP", "NOTE BARS"
+    "CYBERPUNK", "CHLADNI CYB", "CHLADNI MRP", "NOTE BARS",
+    "SINE WAVE"
 };
 bool hdrDirty  = true;
 bool visClear  = true;
@@ -2781,6 +2782,37 @@ void panelCyberpunk() {
     }
 }
 
+// Panel: SINE WAVE — green sine wave scrolling across panel, MIDI-reactive
+void panelSineWave() {
+    panelFade(40);
+    float total = avgEnergy() + energy;
+    if (total < 0.02f) return;
+    static uint16_t phase = 0;
+    phase += 3 + (uint16_t)(total * 12);
+    float amp = 0.5f + total * (panelH / 2.0f - 1.0f);
+    float midY = (panelH - 1) / 2.0f;
+    for (int x = 0; x < PANEL_W; x++) {
+        uint8_t s = sin8((uint8_t)(x * 18 + phase));
+        float fy = midY + (int8_t)(s - 128) / 128.0f * amp;
+        int y = (int)(fy + 0.5f);
+        int band = x * NUM_BANDS / PANEL_W;
+        uint8_t boost = (uint8_t)(bandDisp[min(band, NUM_BANDS - 1)] * 80);
+        uint8_t bri = 140 + (uint8_t)(total * 115) + boost;
+        if (bri < 140) bri = 255;
+        uint8_t hue = 96;
+        if (y >= 0 && y < panelH)
+            panelSet(x, y, CHSV(hue, 255, bri));
+        if (y - 1 >= 0 && y - 1 < panelH)
+            panelAdd(x, y - 1, CHSV(hue + 8, 220, bri / 3));
+        if (y + 1 >= 0 && y + 1 < panelH)
+            panelAdd(x, y + 1, CHSV(hue + 8, 220, bri / 3));
+        if (y - 2 >= 0 && y - 2 < panelH)
+            panelAdd(x, y - 2, CHSV(hue + 16, 180, bri / 6));
+        if (y + 2 >= 0 && y + 2 < panelH)
+            panelAdd(x, y + 2, CHSV(hue + 16, 180, bri / 6));
+    }
+}
+
 // Panel dispatch: routes ledPreset index to the corresponding effect
 void renderPanel() {
     switch (ledPreset) {
@@ -2820,6 +2852,7 @@ void renderPanel() {
         case 33: panelChladniCyber(); break;
         case 34: panelChladniMorph(); break;
         case 35: panelNoteBars();     break;
+        case 36: panelSineWave();    break;
     }
 }
 

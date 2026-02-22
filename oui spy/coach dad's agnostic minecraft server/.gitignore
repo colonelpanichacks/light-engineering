@@ -1,0 +1,11 @@
+# World data (large, don't commit)
+data/
+
+# Backups
+backups/
+
+# Environment secrets
+.env
+
+# macOS
+.DS_Store
