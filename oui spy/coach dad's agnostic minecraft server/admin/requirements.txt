@@ -1,4 +1,0 @@
-flask>=3.0
-mcrcon>=0.7
-gunicorn>=22.0
-requests>=2.31
