@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS RUNNER</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css?v=30">
+</head>
+<body>
+
+    <!-- Status dot (upper right) -->
+    <div id="status-beacon" class="beacon-idle" title="idle"></div>
+
+    <div id="app-layout">
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+        <div class="stats-box">
+            <div class="stats-box-inner">
+                <div class="avatar-col">
+                    <div class="avatar-sprite-wrap">
+                        <div class="avatar-sprite avatar-sprite-lg" id="avatar-sprite">C</div>
+                        <div id="avatar-beacon" class="avatar-beacon beacon-idle"></div>
+                    </div>
+                    <select id="avatar-select"></select>
+                </div>
+                <div class="stats-info">
+                    <div class="stat-row"><span class="stat-label">model</span><span class="stat-val" id="status-model">--</span></div>
+                    <div class="stat-row"><span class="stat-label">status</span><span class="stat-val"><span class="status-dot" id="status-ollama"></span> <span id="status-text">offline</span></span></div>
+                    <div class="stat-row"><span class="stat-label">voice</span><span class="stat-val" id="stat-voice">--</span></div>
+                    <div class="stat-row"><span class="stat-label">temp</span><span class="stat-val" id="stat-temp">--</span></div>
+                    <div class="stat-row"><span class="stat-label">tokens</span><span class="stat-val" id="stat-tokens">--</span></div>
+                    <div class="stat-row"><span class="stat-label">msgs</span><span class="stat-val" id="stat-msgs">0</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="sidebar-actions">
+            <button id="clear-history-btn" class="btn-muted btn-sm">Clear</button>
+            <button id="new-session-btn" class="btn-primary btn-sm" style="flex:1">+ New</button>
+            <button id="kill-llm-btn" class="btn-kill btn-sm">Kill</button>
+        </div>
+        <div class="sidebar-sessions-label">Sessions</div>
+        <div id="sessions-list" class="sessions-list"></div>
+    </aside>
+
+    <div id="main-col">
+
+    <!-- Top bar -->
+    <header id="topbar">
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="chat">Chat</button>
+            <button class="tab-btn" data-tab="soul">Soul</button>
+            <button class="tab-btn" data-tab="tools">Skills</button>
+            <button class="tab-btn" data-tab="schedule">Schedule</button>
+            <button class="tab-btn" data-tab="memories">Memories</button>
+            <button class="tab-btn" data-tab="settings">Settings</button>
+        </nav>
+    </header>
+
+    <!-- Main content -->
+    <main id="main">
+
+        <!-- Tab: Chat -->
+        <div class="tab-panel active" data-panel="chat">
+            <div id="mobile-sessions" class="mobile-sessions">
+                <div class="mobile-sessions-header">
+                    <span class="mobile-sessions-label">Sessions</span>
+                    <button id="mobile-sessions-toggle" class="mobile-sessions-toggle">&#x25BC;</button>
+                </div>
+                <div id="mobile-sessions-list" class="mobile-sessions-list"></div>
+            </div>
+            <div id="messages"></div>
+            <div id="input-bar">
+                <label class="voice-toggle" title="Toggle voice responses">
+                    <input type="checkbox" id="voice-toggle-cb">
+                    <span class="voice-icon">&#9835;</span>
+                </label>
+                <label class="overlay-toggle" title="Show avatar on desktop when responding">
+                    <input type="checkbox" id="overlay-toggle-cb">
+                    <span class="overlay-icon" id="overlay-icon-sprite"></span>
+                </label>
+                <textarea id="user-input" placeholder="Talk to your agent..." rows="1"></textarea>
+                <button id="mic-btn" title="Hold to talk, or click to toggle recording">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="5" y="1" width="6" height="9" rx="3" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M3 7v1a5 5 0 0010 0V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        <line x1="8" y1="13" x2="8" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+
+        <!-- Tab: Soul -->
+        <div class="tab-panel" data-panel="soul">
+            <div class="panel-header">
+                <h3>Soul Editor</h3>
+                <span class="panel-desc">Edit the agent's identity, personality, and persistent memory</span>
+            </div>
+            <div class="soul-toggle-row">
+                <label class="toggle-switch" title="When enabled, only the soul file is used as the system prompt (no tools, memory, or reminders)">
+                    <input type="checkbox" id="soul-only-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">Only Soul at Boot</span>
+            </div>
+            <textarea id="soul-editor" spellcheck="false"></textarea>
+            <div class="panel-actions">
+                <button id="save-soul-btn" class="btn-primary">Save Soul</button>
+                <button id="ingest-soul-btn" class="btn-secondary">Ingest Soul &amp; Resurrect</button>
+                <span id="soul-status" class="save-status"></span>
+            </div>
+        </div>
+
+        <!-- Tab: Skills (built-in tools + custom skills + reminders) -->
+        <div class="tab-panel" data-panel="tools">
+            <div class="panel-header">
+                <h3>Skills</h3>
+                <span class="panel-desc">Built-in tools, custom skills, and reminders</span>
+            </div>
+            <div class="tools-content">
+                <div class="tools-section">
+                    <div class="tools-section-header">Built-in Tools</div>
+                    <div id="tools-list"></div>
+                </div>
+                <div class="tools-section">
+                    <div class="tools-section-header">
+                        Custom Skills
+                        <button id="new-skill-btn" class="btn-primary btn-sm">New Skill</button>
+                        <span id="skills-status" class="save-status"></span>
+                    </div>
+                    <!-- Skillset filter tabs -->
+                    <div class="skillset-tabs" id="skillset-tabs"></div>
+                    <div id="skills-list"></div>
+                </div>
+                <div class="tools-section">
+                    <div class="tools-section-header">
+                        Reminders
+                        <span id="reminders-status" class="save-status"></span>
+                    </div>
+                    <div class="reminders-inline">
+                        <!-- Reminder builder (compact) -->
+                        <div class="reminder-builder">
+                            <div class="reminder-builder-row">
+                                <div class="setting-group" style="flex:2">
+                                    <label>What</label>
+                                    <input type="text" id="reminder-content" placeholder="Check Tindie orders">
+                                </div>
+                                <div class="setting-group" style="flex:1">
+                                    <label>Trigger</label>
+                                    <select id="reminder-trigger-type">
+                                        <option value="time">Time</option>
+                                        <option value="keyword">Keyword</option>
+                                        <option value="startup">On Startup</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Time-based options -->
+                            <div class="reminder-builder-row" id="reminder-time-opts">
+                                <div class="setting-group">
+                                    <label>Time</label>
+                                    <input type="time" id="reminder-time" value="09:00">
+                                </div>
+                                <div class="setting-group">
+                                    <label>Days</label>
+                                    <div class="day-picker" id="reminder-days">
+                                        <button class="day-btn" data-day="mon">M</button>
+                                        <button class="day-btn" data-day="tue">T</button>
+                                        <button class="day-btn" data-day="wed">W</button>
+                                        <button class="day-btn" data-day="thu">T</button>
+                                        <button class="day-btn" data-day="fri">F</button>
+                                        <button class="day-btn" data-day="sat">S</button>
+                                        <button class="day-btn" data-day="sun">S</button>
+                                    </div>
+                                </div>
+                                <div class="setting-group">
+                                    <label>Expires</label>
+                                    <input type="date" id="reminder-expires" placeholder="Never">
+                                </div>
+                            </div>
+
+                            <!-- Keyword trigger options -->
+                            <div class="reminder-builder-row hidden" id="reminder-keyword-opts">
+                                <div class="setting-group">
+                                    <label>Keyword / Context</label>
+                                    <input type="text" id="reminder-keyword" placeholder="e.g. morning, project, shopping">
+                                </div>
+                            </div>
+
+                            <div class="panel-actions">
+                                <button id="add-reminder-btn" class="btn-primary btn-sm">Add</button>
+                            </div>
+                        </div>
+
+                        <!-- Active reminders list -->
+                        <div id="reminders-list" class="reminders-list"></div>
+
+                        <!-- Raw editor (collapsed) -->
+                        <details class="reminders-raw-details">
+                            <summary class="reminders-raw-header">Raw (reminders.md)</summary>
+                            <textarea id="reminders-editor" spellcheck="false" rows="6"></textarea>
+                            <div class="panel-actions">
+                                <button id="save-reminders-btn" class="btn-primary btn-sm">Save Raw</button>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skill editor modal -->
+            <div id="skill-editor-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 id="skill-editor-title">New Skill</h4>
+                        <button class="modal-close" id="skill-editor-close">&times;</button>
+                    </div>
+                    <div class="skill-form">
+                        <div class="setting-group">
+                            <label>Name</label>
+                            <input type="text" id="skill-name" placeholder="my-skill">
+                        </div>
+                        <div class="setting-group">
+                            <label>Description</label>
+                            <input type="text" id="skill-desc" placeholder="What this skill does">
+                        </div>
+                        <div class="setting-group">
+                            <label>Language</label>
+                            <select id="skill-lang">
+                                <option value="python">Python</option>
+                                <option value="bash">Bash</option>
+                            </select>
+                        </div>
+                        <div class="setting-group">
+                            <label>Platform</label>
+                            <select id="skill-platform">
+                                <option value="macos">macOS</option>
+                                <option value="linux">Linux</option>
+                                <option value="windows">Windows</option>
+                                <option value="cross-platform">Cross-platform</option>
+                            </select>
+                        </div>
+                        <div class="setting-group">
+                            <label>Code</label>
+                            <textarea id="skill-code" spellcheck="false" rows="12" placeholder="# your code here"></textarea>
+                        </div>
+                        <div class="panel-actions">
+                            <button id="skill-save-btn" class="btn-primary">Save Skill</button>
+                            <button id="skill-run-btn" class="btn-secondary">Run</button>
+                            <button id="skill-delete-btn" class="btn-danger">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Schedule -->
+        <div class="tab-panel" data-panel="schedule">
+            <div class="panel-header">
+                <h3>Schedule</h3>
+                <span class="panel-desc">Scheduled tasks and recurring prompts the agent runs automatically</span>
+            </div>
+
+            <!-- Task builder -->
+            <div class="schedule-builder">
+                <div class="schedule-builder-row">
+                    <div class="setting-group" style="flex:2">
+                        <label>What to run</label>
+                        <input type="text" id="schedule-command" placeholder="say 'Time to stand up' or a shell command...">
+                    </div>
+                    <div class="setting-group" style="flex:1">
+                        <label>Task name</label>
+                        <input type="text" id="schedule-name" placeholder="standup-reminder">
+                    </div>
+                </div>
+                <div class="schedule-builder-row">
+                    <div class="setting-group">
+                        <label>Frequency</label>
+                        <select id="schedule-frequency">
+                            <option value="once">One time</option>
+                            <option value="daily">Every day</option>
+                            <option value="weekdays">Weekdays (Mon-Fri)</option>
+                            <option value="weekly">Once a week</option>
+                            <option value="hourly">Every hour</option>
+                            <option value="custom">Custom (cron)</option>
+                        </select>
+                    </div>
+                    <div class="setting-group" id="schedule-time-group">
+                        <label>Time</label>
+                        <input type="time" id="schedule-time" value="09:00">
+                    </div>
+                    <div class="setting-group" id="schedule-date-group">
+                        <label>Date</label>
+                        <input type="date" id="schedule-date">
+                    </div>
+                    <div class="setting-group hidden" id="schedule-day-group">
+                        <label>Day</label>
+                        <select id="schedule-day">
+                            <option value="1">Monday</option>
+                            <option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option>
+                            <option value="4">Thursday</option>
+                            <option value="5">Friday</option>
+                            <option value="6">Saturday</option>
+                            <option value="0">Sunday</option>
+                        </select>
+                    </div>
+                    <div class="setting-group hidden" id="schedule-cron-group">
+                        <label>Cron expression</label>
+                        <input type="text" id="schedule-cron" placeholder="0 9 * * *">
+                    </div>
+                </div>
+                <div class="panel-actions">
+                    <button id="add-schedule-btn" class="btn-primary">Add Task</button>
+                    <span id="schedule-status" class="save-status"></span>
+                </div>
+            </div>
+
+            <!-- Active scheduled tasks list -->
+            <div class="schedule-list-header">Active Scheduled Tasks</div>
+            <div id="schedule-list" class="schedule-list"></div>
+        </div>
+
+        <!-- Tab: Memories -->
+        <div class="tab-panel" data-panel="memories">
+            <div class="panel-header">
+                <h3>Memories</h3>
+                <span class="panel-desc">Long-term facts, preferences, and knowledge stored across sessions</span>
+            </div>
+
+            <!-- Memory builder -->
+            <div class="memory-builder">
+                <div class="memory-builder-row">
+                    <div class="setting-group" style="flex:1">
+                        <label>Category</label>
+                        <select id="memory-category">
+                            <option value="Facts">Facts</option>
+                            <option value="Preferences">Preferences</option>
+                            <option value="Knowledge">Knowledge</option>
+                        </select>
+                    </div>
+                    <div class="setting-group" style="flex:3">
+                        <label>Memory</label>
+                        <input type="text" id="memory-content" placeholder="User prefers dark mode and SVG icons...">
+                    </div>
+                </div>
+                <div class="panel-actions">
+                    <button id="add-memory-btn" class="btn-primary btn-sm">Add Memory</button>
+                    <span id="memory-status" class="save-status"></span>
+                </div>
+            </div>
+
+            <!-- Memory entries by section -->
+            <div id="memories-list" class="memories-list"></div>
+
+            <div class="panel-actions">
+                <button id="ingest-memory-btn" class="btn-secondary">Ingest Memories &amp; Resurrect</button>
+            </div>
+
+            <!-- Raw editor (collapsed) -->
+            <details class="memories-raw-details">
+                <summary class="memories-raw-header">Raw (memory.md)</summary>
+                <textarea id="memory-editor" spellcheck="false" rows="10"></textarea>
+                <div class="panel-actions">
+                    <button id="save-memory-raw-btn" class="btn-primary btn-sm">Save Raw</button>
+                </div>
+            </details>
+        </div>
+
+        <!-- Tab: Settings -->
+        <div class="tab-panel" data-panel="settings">
+            <div class="panel-header">
+                <h3>Settings</h3>
+                <span class="panel-desc">Agent configuration — changes apply immediately</span>
+            </div>
+            <div class="settings-grid">
+                <div class="setting-group setting-full-width">
+                    <label>Your Icon</label>
+                    <div id="user-avatar-picker" class="user-avatar-picker"></div>
+                </div>
+
+                <div class="settings-section-label">Voice & Speech</div>
+
+                <div class="setting-group">
+                    <label>Voice</label>
+                    <span class="setting-hint">macOS TTS voice for spoken responses</span>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <select id="setting-voice" style="flex:1;">
+                            <option value="Daniel (Enhanced)">Daniel Enhanced (British)</option>
+                            <option value="Daniel">Daniel (British)</option>
+                            <option value="Samantha">Samantha (American)</option>
+                            <option value="Samantha (Enhanced)">Samantha Enhanced</option>
+                            <option value="Alex">Alex (American)</option>
+                            <option value="Ava (Premium)">Ava Premium</option>
+                            <option value="Ava (Enhanced)">Ava Enhanced</option>
+                            <option value="Allison (Enhanced)">Allison Enhanced</option>
+                            <option value="Karen">Karen (Australian)</option>
+                            <option value="Karen (Enhanced)">Karen Enhanced</option>
+                            <option value="Karen (Premium)">Karen Premium</option>
+                            <option value="Moira">Moira (Irish)</option>
+                            <option value="Tessa">Tessa (South African)</option>
+                            <option value="Tessa (Enhanced)">Tessa Enhanced</option>
+                            <option value="Zarvox">Zarvox (robot)</option>
+                            <option value="Fred">Fred (robot)</option>
+                            <option value="Ralph">Ralph</option>
+                            <option value="Trinoids">Trinoids (alien)</option>
+                            <option value="Whisper">Whisper</option>
+                            <option value="Albert">Albert (old-timey)</option>
+                            <option value="Bad News">Bad News</option>
+                            <option value="Good News">Good News</option>
+                        </select>
+                        <button type="button" id="test-voice-btn" class="btn-muted btn-sm" title="Test voice">Test</button>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>Speech Rate <span class="slider-value" id="rate-val">200</span></label>
+                    <span class="setting-hint">Words per minute (120 = slow, 200 = normal, 300 = fast)</span>
+                    <input type="range" id="setting-rate" min="100" max="350" step="10" value="200">
+                </div>
+                <div class="setting-group">
+                    <label>Audio Output</label>
+                    <span class="setting-hint">Speaker device for TTS output</span>
+                    <select id="setting-audio-device">
+                        <option value="">System Default</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>Alert Sound</label>
+                    <span class="setting-hint">System sound for reminders and notifications</span>
+                    <select id="setting-alert-sound">
+                        <option value="Glass">Glass</option>
+                        <option value="Ping">Ping</option>
+                        <option value="Pop">Pop</option>
+                        <option value="Basso">Basso</option>
+                        <option value="Blow">Blow</option>
+                        <option value="Bottle">Bottle</option>
+                        <option value="Frog">Frog</option>
+                        <option value="Funk">Funk</option>
+                        <option value="Hero">Hero</option>
+                        <option value="Morse">Morse</option>
+                        <option value="Purr">Purr</option>
+                        <option value="Sosumi">Sosumi</option>
+                        <option value="Submarine">Submarine</option>
+                        <option value="Tink">Tink</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>Greeting</label>
+                    <span class="setting-hint">What the avatar says when activated</span>
+                    <input type="text" id="setting-greeting" placeholder="It looks like you need help!">
+                </div>
+
+                <div class="settings-section-label">LLM Parameters</div>
+
+                <div class="setting-group">
+                    <label>Ollama Host</label>
+                    <span class="setting-hint">Ollama API endpoint (restart required)</span>
+                    <input type="text" id="setting-host" placeholder="http://localhost:11434">
+                </div>
+                <div class="setting-group">
+                    <label>Model</label>
+                    <span class="setting-hint">Ollama model name (restart required)</span>
+                    <input type="text" id="setting-model" placeholder="qwen3.5">
+                </div>
+                <div class="setting-group">
+                    <label>Temperature <span class="slider-value" id="temp-val">0.7</span></label>
+                    <span class="setting-hint">Creativity — 0 = deterministic, 1 = creative, 2 = chaotic</span>
+                    <input type="range" id="setting-temp" min="0" max="2" step="0.1" value="0.7">
+                </div>
+                <div class="setting-group">
+                    <label>Top K <span class="slider-value" id="topk-val">40</span></label>
+                    <span class="setting-hint">Limits vocabulary per token — lower = more focused, higher = more diverse</span>
+                    <input type="range" id="setting-topk" min="1" max="100" step="1" value="40">
+                </div>
+                <div class="setting-group">
+                    <label>Top P <span class="slider-value" id="topp-val">0.9</span></label>
+                    <span class="setting-hint">Nucleus sampling — 0.5 = conservative, 0.9 = natural, 1.0 = full range</span>
+                    <input type="range" id="setting-topp" min="0.1" max="1.0" step="0.05" value="0.9">
+                </div>
+                <div class="setting-group">
+                    <label>Max Tokens <span class="slider-value" id="maxtok-val">300</span></label>
+                    <span class="setting-hint">Maximum response length — voice works best under 300</span>
+                    <input type="range" id="setting-maxtokens" min="50" max="2000" step="50" value="300">
+                </div>
+                <div class="setting-group">
+                    <label>Repeat Penalty <span class="slider-value" id="repeat-val">1.1</span></label>
+                    <span class="setting-hint">Discourages repetition — 1.0 = off, 1.5 = strong</span>
+                    <input type="range" id="setting-repeat" min="1.0" max="2.0" step="0.05" value="1.1">
+                </div>
+
+                <div class="settings-section-label">Voice Listener</div>
+
+                <div class="setting-group">
+                    <label>Wake Duration <span class="slider-value" id="wake-val">3</span>s</label>
+                    <span class="setting-hint">How long to listen for the wake word before going idle</span>
+                    <input type="range" id="setting-wake" min="1" max="10" step="1" value="3">
+                </div>
+                <div class="setting-group">
+                    <label>Query Duration <span class="slider-value" id="query-val">5</span>s</label>
+                    <span class="setting-hint">How long to record your query after wake word</span>
+                    <input type="range" id="setting-query" min="2" max="15" step="1" value="5">
+                </div>
+                <div class="setting-group">
+                    <label>Followup Duration <span class="slider-value" id="followup-val">5</span>s</label>
+                    <span class="setting-hint">How long to wait for follow-up questions</span>
+                    <input type="range" id="setting-followup" min="2" max="15" step="1" value="5">
+                </div>
+
+                <div class="settings-section-label">System</div>
+
+                <div class="setting-group setting-full-width">
+                    <button id="reboot-llm-btn" class="btn-danger" style="width:100%">Kill &amp; Resurrect</button>
+                    <span class="setting-hint">Stops current generation, reloads soul + memory, warms up model fresh</span>
+                </div>
+
+                <div class="panel-actions">
+                    <button id="save-settings-btn" class="btn-primary">Save Settings</button>
+                    <span id="settings-status" class="save-status"></span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    </div><!-- /main-col -->
+    </div><!-- /app-layout -->
+
+    <script src="/static/app.js?v=57"></script>
+</body>
+</html>

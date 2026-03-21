@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Dark background -->
+  <rect width="128" height="128" fill="#0d1117" rx="16"/>
+  <rect x="2" y="2" width="124" height="124" fill="none" stroke="#00d4ff" stroke-width="1" rx="14" opacity="0.25"/>
+
+  <!-- NEXUS - big, prominent, top -->
+  <text x="64" y="28" text-anchor="middle" font-family="monospace, 'Courier New'" font-size="22" font-weight="bold" fill="#00d4ff" letter-spacing="6">NEXUS</text>
+
+  <!-- Lightning bolt - centered, bold -->
+  <polygon points="72,32 46,70 60,70 36,104 92,62 76,62 94,32" fill="#00d4ff" opacity="0.12"/>
+  <polygon points="70,35 48,68 61,68 40,100 88,60 74,60 90,35" fill="#00d4ff"/>
+  <polygon points="68,40 53,64 62,64 46,92 82,62 72,62 82,40" fill="#40e0ff" opacity="0.55"/>
+  <line x1="70" y1="42" x2="58" y2="60" stroke="#fff" stroke-width="2.5" opacity="0.45" stroke-linecap="round"/>
+  <line x1="60" y1="70" x2="50" y2="88" stroke="#fff" stroke-width="1.5" opacity="0.3" stroke-linecap="round"/>
+
+  <!-- RUNNER - big, prominent, bottom -->
+  <text x="64" y="120" text-anchor="middle" font-family="monospace, 'Courier New'" font-size="20" font-weight="bold" fill="#bd00ff" letter-spacing="3">RUNNER</text>
+
+  <!-- Accent lines flanking text -->
+  <line x1="6" y1="34" x2="24" y2="34" stroke="#00d4ff" stroke-width="1" opacity="0.3"/>
+  <line x1="104" y1="34" x2="122" y2="34" stroke="#00d4ff" stroke-width="1" opacity="0.3"/>
+  <line x1="6" y1="108" x2="22" y2="108" stroke="#bd00ff" stroke-width="1" opacity="0.3"/>
+  <line x1="106" y1="108" x2="122" y2="108" stroke="#bd00ff" stroke-width="1" opacity="0.3"/>
+</svg>

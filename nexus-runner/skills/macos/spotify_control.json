@@ -1,0 +1,7 @@
+{
+  "name": "spotify_control",
+  "description": "Control Spotify playback - play, pause, skip, volume, search, now playing",
+  "language": "python",
+  "platform": "macos",
+  "created": "2026-03-20"
+}

@@ -1,0 +1,8 @@
+httpx
+fastapi
+uvicorn[standard]
+websockets
+websocket-client
+requests
+pyobjc-framework-Cocoa
+python-multipart
